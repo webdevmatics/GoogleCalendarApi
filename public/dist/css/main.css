@@ -1,0 +1,48 @@
+body {
+  padding-top: 10px;
+  padding-bottom: 20px;
+}
+
+
+
+.navbar {
+  margin-bottom: 20px;
+}
+
+.notebooks{
+	/*margin-top: 10px;*/
+	padding-top: 50px;
+	padding-left: 30px;
+}
+.notes-group{
+	/*margin-top: 10px;*/
+	padding-top: 50px;
+}
+
+/*.notebook-title{
+	text-align: center;
+	padding: 10px 0 7px 15px;
+}*/
+
+.navholder a{
+	color: white;
+	top: 6px;
+    position: relative;
+
+}
+.navholder li{
+    list-style-type: none;
+
+}
+
+.navholder:hover{
+	text-decoration: none;
+	color: white;
+}
+
+a>img{
+	    width: 248px;
+}
+.card-title{
+	font-size: 17px;
+}
