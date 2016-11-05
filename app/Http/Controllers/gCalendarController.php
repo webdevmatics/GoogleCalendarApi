@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Google_Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_Event;
+use Google_Service_Calendar_EventDateTime;
 use Illuminate\Http\Request;
 
 class gCalendarController extends Controller
@@ -35,14 +37,8 @@ class gCalendarController extends Controller
             $service = new Google_Service_Calendar($this->client);
 
             $calendarId = 'primary';
-            // Print the next 10 events on the user's calendar.
-            $optParams = array(
-                'maxResults' => 10,
-                'orderBy' => 'startTime',
-                'singleEvents' => true,
-                'timeMin' => date('c'),
-            );
-            $results = $service->events->listEvents($calendarId, $optParams);
+
+            $results = $service->events->listEvents($calendarId);
             return $results->getItems();
 
         } else {
@@ -115,12 +111,27 @@ class gCalendarController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int $id
+     * @param $eventId
      * @return \Illuminate\Http\Response
+     * @internal param int $id
      */
-    public function show($id)
+    public function show($eventId)
     {
-        //
+        session_start();
+        if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
+            $this->client->setAccessToken($_SESSION['access_token']);
+
+            $service = new Google_Service_Calendar($this->client);
+            $event = $service->events->get('primary', $eventId);
+
+            if (!$event) {
+                return response()->json(['status' => 'error', 'message' => 'Something went wrong']);
+            }
+            return response()->json(['status' => 'success', 'data' => $event]);
+
+        } else {
+            return redirect()->route('oauthCallback');
+        }
     }
 
     /**
@@ -138,22 +149,76 @@ class gCalendarController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request $request
-     * @param  int $id
+     * @param $eventId
      * @return \Illuminate\Http\Response
+     * @internal param int $id
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $eventId)
     {
-        //
+        session_start();
+        if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
+            $this->client->setAccessToken($_SESSION['access_token']);
+            $service = new Google_Service_Calendar($this->client);
+
+            $startDateTime = Carbon::parse($request->start_date)->toRfc3339String();
+
+            $eventDuration = 30; //minutes
+
+            if ($request->has('end_date')) {
+                $endDateTime = Carbon::parse($request->end_date)->toRfc3339String();
+
+            } else {
+                $endDateTime = Carbon::parse($request->start_date)->addMinutes($eventDuration)->toRfc3339String();
+            }
+
+            // retrieve the event from the API.
+            $event = $service->events->get('primary', $eventId);
+
+            $event->setSummary($request->title);
+
+            $event->setDescription($request->description);
+
+            //start time
+            $start = new Google_Service_Calendar_EventDateTime();
+            $start->setDateTime($startDateTime);
+            $event->setStart($start);
+
+            //end time
+            $end = new Google_Service_Calendar_EventDateTime();
+            $end->setDateTime($endDateTime);
+            $event->setEnd($end);
+
+            $updatedEvent = $service->events->update('primary', $event->getId(), $event);
+
+
+            if (!$updatedEvent) {
+                return response()->json(['status' => 'error', 'message' => 'Something went wrong']);
+            }
+            return response()->json(['status' => 'success', 'data' => $updatedEvent]);
+
+        } else {
+            return redirect()->route('oauthCallback');
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int $id
+     * @param $eventId
      * @return \Illuminate\Http\Response
+     * @internal param int $id
      */
-    public function destroy($id)
+    public function destroy($eventId)
     {
-        //
+        session_start();
+        if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
+            $this->client->setAccessToken($_SESSION['access_token']);
+            $service = new Google_Service_Calendar($this->client);
+
+            $service->events->delete('primary', $eventId);
+
+        } else {
+            return redirect()->route('oauthCallback');
+        }
     }
 }
