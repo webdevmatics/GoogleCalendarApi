@@ -24,9 +24,6 @@ Route::group(['middleware' => 'auth'], function () {
 
 });
 
-Route::get('upload', 'BudgetController@showForm');
-Route::post('upload', 'BudgetController@store');
-
 Auth::routes();
 
 Route::resource('gcalendar', 'gCalendarController');
